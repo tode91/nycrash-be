@@ -1,0 +1,31 @@
+{
+  "name": "nycrash-be",
+  "version": "1.0.0",
+  "description": "",
+  "main": "db.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tode91/nycrash-be.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tode91/nycrash-be/issues"
+  },
+  "homepage": "https://github.com/tode91/nycrash-be#readme",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "fast-csv": "^2.4.1",
+    "mapshaper": "^0.4.57",
+    "mongodb": "^2.2.33",
+    "mongoose": "^4.13.0",
+    "node-fs": "^0.1.7",
+    "ogr2ogr": "^1.2.1",
+    "string-similarity": "^1.2.0"
+  }
+}
