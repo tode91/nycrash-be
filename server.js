@@ -7,20 +7,20 @@ var mongodb = require('mongodb');
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser')
 var app = express();
-
 var MongoClient = require('mongodb').MongoClient;
+var MongoClient = mongodb.MongoClient;
+
+var PropertiesReader = require('properties-reader');
+var properties = PropertiesReader('configuration.properties');
+
 var db;
 
-var server_host = "http://localhost";
-var server_port = 8888
+var server_host = properties.get("backend.host")
+var server_port = properties.get("backend.port")
 
-var MongoClient = mongodb.MongoClient;
-var mongodb_db_name="nyc"
-//var mongodb_server= "mongodb://localhost:27017/"+mongodb_db_name
-var mongodb_server="mongodb://nyc:nyc@cluster0-shard-00-00-2xkoq.mongodb.net:27017,cluster0-shard-00-01-2xkoq.mongodb.net:27017,cluster0-shard-00-02-2xkoq.mongodb.net:27017/nyc?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin"
-
-var mongodb_coll_name = "nyc_crash_from_2017";
-
+var mongodb_db_name=properties.get("mongodb.db")
+var mongodb_server=properties.get("mongodb.server")
+var mongodb_coll_name = properties.get("mongodb.crash_collection");
 
 
 
