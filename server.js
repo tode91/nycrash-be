@@ -10,14 +10,14 @@ var app = express();
 
 var MongoClient = require('mongodb').MongoClient;
 var db;
-var crash_coll = "nyc_crash";
 
 var server_host = "http://localhost";
 var server_port = 8888
 
 var MongoClient = mongodb.MongoClient;
 var mongodb_db_name="nyc"
-var mongodb_server= "mongodb://localhost:27017/"+mongodb_db_name
+//var mongodb_server= "mongodb://localhost:27017/"+mongodb_db_name
+var mongodb_server="mongodb://nyc:nyc@cluster0-shard-00-00-2xkoq.mongodb.net:27017,cluster0-shard-00-01-2xkoq.mongodb.net:27017,cluster0-shard-00-02-2xkoq.mongodb.net:27017/nyc?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin"
 
 var mongodb_coll_name = "nyc_crash_from_2017";
 
@@ -85,25 +85,29 @@ app.post("/crash_by_area", function(req, res, next) {
 	MongoClient.connect(mongodb_server, function(err, db) {
 		  if(err) {errorHandler(req,res,"MongoDB connection error")}		  
 		  var area_type = req.body.area_type
+		  var date_from = req.body.date.from
+		  var date_to = req.body.date.to
 		  var json_group;
 		  var json_match;
 		  switch(area_type){
 			  case "zipcode":
-				  json_match= {"zip_code":{ $exists: true }};
-				  json_group= {"id":"$zip_code.id","name":"$zip_code.name","area":"$zip_code.area"}
+				  json_match= {
+					  	"zip_code":{ $exists: true }
+				        };
+				  json_group= {"id":"$zip_code.id","name":"$zip_code.name","area":{ "$divide": ["$zip_code.area",1000000]}}
 				  break;
 			  case "tract": 
-				  json_match= {"tract":{ $exists: true }};
-				  json_group= {"id":"$tract_code.id","name":"$tract_code.name","area":"$tract_code.area"}
+				  json_match= {"tract_code":{ $exists: true }};
+				  json_group= {"id":"$tract_code.id","name":"$tract_code.name","area":{ "$divide": ["$tract_code.area",1000000]}}
 				  break;
 			  case "borough": 
 				  json_match= {"borough":{ $exists: true }};
-				  json_group= {"id":"$borough.id","name":"$borough.name","area":"$borough.area"}
+				  json_group= {"id":"$borough.id","name":"$borough.name","area":{ "$divide": ["$borough.area",1000000]}}
 				  break;
 		  }
-		  console.log(json_group)
 		  db.collection(mongodb_coll_name).aggregate([
-			  {$match:json_match},
+			  {$match:
+				  {$and:[json_match,{"datetime":{$gte:new Date(date_from),$lt:new Date(date_to)}}]}},
 			  {$group: {
 		  		_id: json_group,
 		  		person_injured: {$sum: "$NUMBER OF PERSONS INJURED"},
@@ -114,7 +118,8 @@ app.post("/crash_by_area", function(req, res, next) {
 		  		cyclist_killed: {$sum: "$NUMBER OF CYCLISTS KILLED"},
 		  		motorist_injured: {$sum: "$NUMBER OF MOTORIST INJURED"},
 		  		motorist_killed: {$sum: "$NUMBER OF MOTORIST KILLED"},
-		  		crash: { $sum: 1 }
+		  		crash: { $sum: 1 },
+		  		involved_vehicle:{$sum:"$n_vehicle"}
 		  		}
 			  }
 		  ], function(err, result) {
@@ -130,12 +135,14 @@ app.post("/crash_by_area", function(req, res, next) {
 app.post("/crash_by_street", function(req, res, next) {
 	MongoClient.connect(mongodb_server, function(err, db) {
 		  if(err) {errorHandler(req,res,"MongoDB connection error")}
-		  
+		  var date_from = req.body.date.from
+		  var date_to = req.body.date.to
+
 		  db.collection(mongodb_coll_name).aggregate([
-			  {$match:{"street_list_4":{ $exists: true }}},
-			  {$unwind : "$street_list_4" },
+			  {$match:{$and:[{"street_list":{ $exists: true }},{"datetime":{$gte:new Date(date_from),$lt:new Date(date_to)}}]}},
+			  {$unwind : "$street_list" },
 			  {$group: {
-				_id:{"id":"$street_list_4.id","name":"$street_list_4.name"},
+				_id:{"id":"$street_list.id","name":"$street_list.name","length":{ "$divide": ["$street_list.length",1000]}},
 		  		person_injured: {$sum: "$NUMBER OF PERSONS INJURED"},
 		  		person_killed: {$sum: "$NUMBER OF PERSONS KILLED"},
 		  		pedestrian_injured: {$sum: "$NUMBER OF PEDESTRIANS INJURED"},
@@ -144,7 +151,8 @@ app.post("/crash_by_street", function(req, res, next) {
 		  		cyclist_killed: {$sum: "$NUMBER OF CYCLISTS KILLED"},
 		  		motorist_injured: {$sum: "$NUMBER OF MOTORIST INJURED"},
 		  		motorist_killed: {$sum: "$NUMBER OF MOTORIST KILLED"},
-		  		crash: { $sum: 1 }
+		  		crash: { $sum: 1 },
+		  		involved_vehicle:{$sum:"$n_vehicle"}
 		  		}
 			  }
 		  ], function(err, result) {
@@ -157,7 +165,7 @@ app.post("/crash_by_street", function(req, res, next) {
 
 //count crash by street
 app.post("/dashboardsParameters", function(req, res, next) {
-	var kpis = ["person_injured","person_killed","pedestrian_injured","pedestrian_killed","cyclist_injured","cyclist_killed","motorist_injured","motorist_killed","crash"]
+	var kpis = ["person_injured","person_killed","pedestrian_injured","pedestrian_killed","cyclist_injured","cyclist_killed","motorist_injured","motorist_killed","crash","involved_vehicle"]
 	var scales = ["logaritmic","sqrt","linear"].sort()
 	var response = {}
 	response["kpi_list"] = kpis.sort()
