@@ -7,6 +7,7 @@ var mongodb = require('mongodb');
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser')
 var app = express();
+var ip = require("ip");
 var MongoClient = require('mongodb').MongoClient;
 var MongoClient = mongodb.MongoClient;
 
@@ -15,14 +16,14 @@ var properties = PropertiesReader('configuration.properties');
 
 var db;
 
-var server_host = server.address.address
-var server_port = server.address.port
+var server_host = ip.address() 
 
 var mongodb_db_name=properties.get("mongodb.db")
 var mongodb_server=properties.get("mongodb.server")
 var mongodb_coll_name = properties.get("mongodb.crash_collection");
 
 
+app.set('port', process.env.PORT || 8080);
 
 app.use(function (req, res, next) {
 
@@ -51,7 +52,7 @@ function errorHandler(req, res, errorMessage) {
 
 //PINGER SERVER
 app.get("/pinger", function(req, res, next) {
-	var response = {"server_api":{"Server Active": true, "host":server_host, "port":server_port, "complete_address":server_host+":"+server_port}}
+	var response = {"server_api":{"Server Active": true, "host":server_host, "port":app.get('port'), "complete_address":server_host+":"+app.get('port')}}
 
 	MongoClient.connect(mongodb_server, function(err, db) {
 		  if(err) {
@@ -176,5 +177,5 @@ app.post("/dashboardsParameters", function(req, res, next) {
 
 
 //Starting the app here will work, but some users will get errors if the db connection process is slow.  
-app.listen(server_port);
-console.log("Listening on \t"+server_host+":"+server_port);
+app.listen(app.get('port'));
+console.log("Listening on \t"+server_host+":"+app.get('port'));
