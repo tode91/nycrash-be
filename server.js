@@ -15,8 +15,8 @@ var properties = PropertiesReader('configuration.properties');
 
 var db;
 
-var server_host = properties.get("backend.host")
-var server_port = properties.get("backend.port")
+var server_host = server.address.address
+var server_port = server.address.port
 
 var mongodb_db_name=properties.get("mongodb.db")
 var mongodb_server=properties.get("mongodb.server")
